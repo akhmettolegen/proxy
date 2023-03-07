@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	httpCli "github.com/akhmettolegen/proxy/internal/clients/http"
+	"github.com/akhmettolegen/proxy/internal/managers/proxy"
 	"github.com/akhmettolegen/proxy/internal/server/configs"
 	"github.com/akhmettolegen/proxy/internal/server/http"
 	"golang.org/x/sync/errgroup"
@@ -21,11 +23,16 @@ func Start() {
 
 	opts := configs.ConfigWithParsedFlags()
 
+	client := httpCli.NewClient(appCtx)
+
+	proxyManager := proxy.NewManager(appCtx, client)
+
 	servers, serversCtx := errgroup.WithContext(appCtx)
 
 	httpSrv := http.NewAPIServer(
 		serversCtx,
 		opts,
+		http.WithProxyManager(proxyManager),
 	)
 
 	servers.Go(func() error {

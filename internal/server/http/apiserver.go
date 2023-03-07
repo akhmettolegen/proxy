@@ -2,6 +2,9 @@ package http
 
 import (
 	"context"
+	"github.com/akhmettolegen/proxy/internal/managers"
+	v1 "github.com/akhmettolegen/proxy/internal/resources/http"
+	proxyv1 "github.com/akhmettolegen/proxy/internal/resources/http/v1"
 	"github.com/akhmettolegen/proxy/internal/server/configs"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -17,17 +20,22 @@ type APIServer struct {
 	BasePath  string
 	masterCtx context.Context
 
+	proxyManager    managers.ProxyManager
 	idleConnsClosed chan struct{}
 	IsTesting       bool
 }
 
-func NewAPIServer(ctx context.Context, cfg *configs.Config) *APIServer {
+func NewAPIServer(ctx context.Context, cfg *configs.Config, opts ...APIServerOption) *APIServer {
 	srv := &APIServer{
 		Address:         cfg.ListenAddr,
 		BasePath:        cfg.BasePath,
 		masterCtx:       ctx,
 		idleConnsClosed: make(chan struct{}),
 		IsTesting:       cfg.IsTesting,
+	}
+
+	for _, opt := range opts {
+		opt(srv)
 	}
 
 	return srv
@@ -80,6 +88,9 @@ func (srv *APIServer) setupRouter() chi.Router {
 		MaxAge:           300,
 	}))
 
+	r.Mount("/version", v1.VersionResource{Version: "version"}.Routes())
+	r.Mount("/api/v1/proxy", proxyv1.ProxyResource{ProxyManager: srv.proxyManager}.Routes())
+
 	return r
 }
 
@@ -97,4 +108,3 @@ func (srv *APIServer) GracefulShutdown(httpSrv *http.Server) {
 func (srv *APIServer) Wait() {
 	<-srv.idleConnsClosed
 }
-
