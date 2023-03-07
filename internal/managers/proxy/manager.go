@@ -3,8 +3,8 @@ package proxy
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	httpCli "github.com/akhmettolegen/proxy/internal/clients"
+	"github.com/akhmettolegen/proxy/internal/database/drivers"
 	"github.com/akhmettolegen/proxy/internal/managers"
 	"github.com/akhmettolegen/proxy/internal/models"
 	"github.com/google/uuid"
@@ -16,28 +16,61 @@ import (
 
 type Manager struct {
 	ctx        context.Context
-	HttpClient httpCli.HttpClient
+	httpClient httpCli.HttpClient
+	taskRepo   drivers.TaskRepository
 }
 
-func NewManager(ctx context.Context, cli httpCli.HttpClient) managers.ProxyManager {
+func NewManager(ctx context.Context, cli httpCli.HttpClient, taskRepo drivers.TaskRepository) managers.ProxyManager {
 	return &Manager{
 		ctx:        ctx,
-		HttpClient: cli,
+		httpClient: cli,
+		taskRepo:   taskRepo,
 	}
 }
 
 func (m *Manager) ProxyRequest(req *models.ProxyRequest) (*models.ProxyResponse, error) {
-	reqByte, err := json.Marshal(&req.Body)
-	if err != nil {
-		return nil, err
+
+	taskId := uuid.NewString()
+
+	go m.ProcessRequest(req, taskId)
+
+	return &models.ProxyResponse{
+		Id: taskId,
+	}, nil
+}
+
+func (m *Manager) ProcessRequest(req *models.ProxyRequest, taskId string) {
+
+	task := &models.Task{
+		Id:     taskId,
+		Status: models.TaskStatusInProcess,
+		Length: 0,
 	}
 
-	resp, err := m.HttpClient.Request(req.Method, req.Url, req.Headers, reqByte)
+	err := m.taskRepo.Create(m.ctx, task)
 	if err != nil {
-		return nil, err
+		log.Println("[ERROR] Create task error:", err.Error())
+		return
+	}
+
+	reqByte, err := json.Marshal(&req.Body)
+	if err != nil {
+		log.Println("[ERROR] Json marshal error:", err.Error())
+		return
+	}
+
+	resp, err := m.httpClient.Request(req.Method, req.Url, req.Headers, reqByte)
+	if err != nil {
+		log.Println("[ERROR] Http client request error:", err.Error())
+		return
 	}
 
 	defer resp.Body.Close()
+
+	task.HttpStatusCode = resp.StatusCode
+	task.Status = models.TaskStatusDone
+	task.Length = int(resp.ContentLength)
+	task.Headers = resp.Header
 
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusCreated {
 		errTxt := "ProxyRequest error: code=" + strconv.Itoa(resp.StatusCode) + " message=" + resp.Status
@@ -49,15 +82,12 @@ func (m *Manager) ProxyRequest(req *models.ProxyRequest) (*models.ProxyResponse,
 			}
 		}
 		log.Println("[ERROR]", errTxt)
-		return nil, errors.New(errTxt)
+
+		task.Status = models.TaskStatusError
 	}
 
-	taskId := uuid.NewString()
-
-	return &models.ProxyResponse{
-		Id:      taskId,
-		Status:  resp.Status,
-		Headers: resp.Header,
-		Length:  resp.ContentLength,
-	}, nil
+	err = m.taskRepo.Update(m.ctx, task)
+	if err != nil {
+		log.Println("[ERROR] Update task error:", err.Error())
+	}
 }

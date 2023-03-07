@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	httpCli "github.com/akhmettolegen/proxy/internal/clients/http"
+	"github.com/akhmettolegen/proxy/internal/database"
+	"github.com/akhmettolegen/proxy/internal/database/drivers"
 	"github.com/akhmettolegen/proxy/internal/managers/proxy"
 	"github.com/akhmettolegen/proxy/internal/server/configs"
 	"github.com/akhmettolegen/proxy/internal/server/http"
@@ -23,9 +25,17 @@ func Start() {
 
 	opts := configs.ConfigWithParsedFlags()
 
+	// Database
+	ds, err := setupDatabase(opts)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+	defer ds.Close()
+
 	client := httpCli.NewClient(appCtx)
 
-	proxyManager := proxy.NewManager(appCtx, client)
+	proxyManager := proxy.NewManager(appCtx, client, ds.Task())
 
 	servers, serversCtx := errgroup.WithContext(appCtx)
 
@@ -56,4 +66,24 @@ func catchForTermination(cancel context.CancelFunc, signals ...os.Signal) {
 	<-stop
 	log.Print("[WARN] interrupt signal")
 	cancel()
+}
+
+func setupDatabase(opts *configs.Config) (drivers.DataStore, error) {
+	ds, err := database.New(drivers.DataStoreConfig{
+		URL:           opts.DSURL,
+		DataBaseName:  opts.DSDB,
+		DataStoreName: opts.DSName,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	if err := ds.Connect(); err != nil {
+		errText := fmt.Sprintf("[ERROR] cannot connect to datastore %s: %v", opts.DSName, err)
+		return nil, errors.New(errText)
+	}
+
+	fmt.Println("Connected to", ds.Name())
+
+	return ds, nil
 }

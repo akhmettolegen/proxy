@@ -11,6 +11,10 @@ type Config struct {
 	BasePath   string `long:"base-path" env:"BASE_PATH" description:"base path of the host" required:"false" default:"/proxy"`
 	FilesDir   string `long:"files-directory" env:"FILES_DIR" description:"Directory where all static files are located" required:"false" default:"/usr/share/proxy"`
 
+	DSName string `short:"n" long:"ds" env:"DATASTORE" description:"DataStore name (format: dgraph/null)" required:"false" default:"mongo"`
+	DSDB   string `short:"d" long:"ds-db" env:"DATASTORE_DB" description:"DataStore database name (format: inventory)" required:"false" default:"proxy"`
+	DSURL  string `short:"u" long:"ds-url" env:"DATASTORE_URL" description:"DataStore URL (format: mongodb://localhost:27017)" required:"false" default:"mongodb://localhost:27017"`
+
 	InDebugMode bool `long:"in-debug-mode" env:"DEBUG" description:"debug mode"`
 	IsTesting   bool `long:"testing" env:"TESTING" description:"testing mode"`
 }
