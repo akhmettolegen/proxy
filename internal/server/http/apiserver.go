@@ -89,7 +89,7 @@ func (srv *APIServer) setupRouter() chi.Router {
 	}))
 
 	r.Mount("/version", v1.VersionResource{Version: "version"}.Routes())
-	r.Mount("/api/v1/proxy", proxyv1.ProxyResource{ProxyManager: srv.proxyManager}.Routes())
+	r.Mount("/api/v1/task", proxyv1.ProxyResource{ProxyManager: srv.proxyManager}.Routes())
 
 	return r
 }

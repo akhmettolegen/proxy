@@ -3,6 +3,7 @@ package proxy
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	httpCli "github.com/akhmettolegen/proxy/internal/clients"
 	"github.com/akhmettolegen/proxy/internal/database/drivers"
 	"github.com/akhmettolegen/proxy/internal/managers"
@@ -12,6 +13,10 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+)
+
+var (
+	ErrInValidTaskId = errors.New("invalid task id")
 )
 
 type Manager struct {
@@ -62,6 +67,12 @@ func (m *Manager) ProcessRequest(req *models.ProxyRequest, taskId string) {
 	resp, err := m.httpClient.Request(req.Method, req.Url, req.Headers, reqByte)
 	if err != nil {
 		log.Println("[ERROR] Http client request error:", err.Error())
+
+		task.Status = models.TaskStatusError
+		err = m.taskRepo.Update(m.ctx, task)
+		if err != nil {
+			log.Println("[ERROR] Update task error:", err.Error())
+		}
 		return
 	}
 
@@ -90,4 +101,22 @@ func (m *Manager) ProcessRequest(req *models.ProxyRequest, taskId string) {
 	if err != nil {
 		log.Println("[ERROR] Update task error:", err.Error())
 	}
+}
+
+func (m *Manager) TaskById(id string) (*models.Task, error) {
+	task, err := m.taskRepo.TaskById(m.ctx, id)
+	if err != nil {
+		log.Println("[ERROR] Task by id error:", err.Error())
+		return nil, err
+	}
+
+	return &models.Task{
+		Id:             task.Id,
+		Status:         task.Status,
+		HttpStatusCode: task.HttpStatusCode,
+		Headers:        task.Headers,
+		Length:         task.Length,
+		CreatedAt:      task.CreatedAt,
+		UpdatedAt:      task.UpdatedAt,
+	}, nil
 }

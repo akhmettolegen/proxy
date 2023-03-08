@@ -15,6 +15,6 @@ type Task struct {
 	HttpStatusCode int                 `bson:"httpStatusCode" json:"httpStatusCode"`
 	Headers        map[string][]string `json:"headers"`
 	Length         int                 `bson:"length" json:"length"`
-	CreatedAt      time.Time           `bson:"createdAt" json:"createdAt"`
-	UpdatedAt      time.Time           `bson:"updatedAt" json:"updatedAt"`
+	CreatedAt      time.Time           `bson:"createdAt" json:"createdAt,omitempty"`
+	UpdatedAt      time.Time           `bson:"updatedAt" json:"updatedAt,omitempty"`
 }
