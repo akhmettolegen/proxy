@@ -4,7 +4,7 @@ import (
 	"encoding/json"
 	"github.com/akhmettolegen/proxy/internal/managers"
 	"github.com/akhmettolegen/proxy/internal/managers/auth"
-	"github.com/akhmettolegen/proxy/internal/managers/proxy"
+	"github.com/akhmettolegen/proxy/internal/managers/task"
 	"github.com/akhmettolegen/proxy/internal/models"
 	"github.com/akhmettolegen/proxy/internal/models/httperrors"
 	"github.com/go-chi/chi"
@@ -12,44 +12,44 @@ import (
 	"net/http"
 )
 
-type ProxyResource struct {
-	ProxyManager managers.ProxyManager
-	AuthManager  *auth.AuthManager
+type TaskResource struct {
+	TaskManager managers.TaskManager
+	AuthManager *auth.AuthManager
 }
 
-func (rs ProxyResource) Routes() chi.Router {
+func (rs TaskResource) Routes() chi.Router {
 	r := chi.NewRouter()
 	r.Use(auth.NewUserAccessCtx(rs.AuthManager.JWTKey()).ChiMiddleware)
 
 	r.Group(func(r chi.Router) {
 
-		r.Post("/", rs.proxyRequest)
+		r.Post("/", rs.taskCreate)
 		r.Get("/{id}", rs.taskById)
 	})
 
 	return r
 }
 
-// @Tags proxyRequest
-// @Description Proxy request
+// @Tags taskCreate
+// @Description Create task
 // @Accept  json
 // @Produce  json
-// @Param body body models.ProxyRequest true "Request"
-// @Success 200 {object} models.ProxyResponse
+// @Param body body models.TaskRequest true "Request"
+// @Success 200 {object} models.TaskResponse
 // @Failure 400 {object} httperrors.Response
 // @Failure 401 {object} httperrors.Response
 // @Failure 500 {object} httperrors.Response
 // @Router /task [post]
-func (rs ProxyResource) proxyRequest(w http.ResponseWriter, r *http.Request) {
+func (rs TaskResource) taskCreate(w http.ResponseWriter, r *http.Request) {
 
-	var req *models.ProxyRequest
+	var req *models.TaskRequest
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		_ = render.Render(w, r, httperrors.BadRequest(err))
 		return
 	}
 
-	result, err := rs.ProxyManager.ProxyRequest(req)
+	result, err := rs.TaskManager.TaskCreate(req)
 	if err != nil {
 		_ = render.Render(w, r, httperrors.Internal(err))
 		return
@@ -68,15 +68,15 @@ func (rs ProxyResource) proxyRequest(w http.ResponseWriter, r *http.Request) {
 // @Failure 401 {object} httperrors.Response
 // @Failure 500 {object} httperrors.Response
 // @Router /task/{id} [get]
-func (rs ProxyResource) taskById(w http.ResponseWriter, r *http.Request) {
+func (rs TaskResource) taskById(w http.ResponseWriter, r *http.Request) {
 
 	id := chi.URLParam(r, "id")
 	if id == "" {
-		_ = render.Render(w, r, httperrors.BadRequest(proxy.ErrInValidTaskId))
+		_ = render.Render(w, r, httperrors.BadRequest(task.ErrInValidTaskId))
 		return
 	}
 
-	result, err := rs.ProxyManager.TaskById(id)
+	result, err := rs.TaskManager.TaskById(id)
 	if err != nil {
 		_ = render.Render(w, r, httperrors.Internal(err))
 		return

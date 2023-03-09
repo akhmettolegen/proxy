@@ -7,9 +7,9 @@ import (
 
 type APIServerOption func(srv *APIServer)
 
-func WithProxyManager(proxyManager managers.ProxyManager) APIServerOption {
+func WithTaskManager(taskManager managers.TaskManager) APIServerOption {
 	return func(srv *APIServer) {
-		srv.proxyManager = proxyManager
+		srv.taskManager = taskManager
 	}
 }
 

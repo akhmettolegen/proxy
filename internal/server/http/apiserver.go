@@ -5,7 +5,7 @@ import (
 	"github.com/akhmettolegen/proxy/internal/managers"
 	"github.com/akhmettolegen/proxy/internal/managers/auth"
 	v1 "github.com/akhmettolegen/proxy/internal/resources/http"
-	proxyv1 "github.com/akhmettolegen/proxy/internal/resources/http/v1"
+	taskv1 "github.com/akhmettolegen/proxy/internal/resources/http/v1"
 	"github.com/akhmettolegen/proxy/internal/server/configs"
 	"github.com/go-chi/chi"
 	"github.com/go-chi/chi/middleware"
@@ -21,7 +21,7 @@ type APIServer struct {
 	BasePath  string
 	masterCtx context.Context
 
-	proxyManager    managers.ProxyManager
+	taskManager     managers.TaskManager
 	authManager     *auth.AuthManager
 	idleConnsClosed chan struct{}
 	IsTesting       bool
@@ -91,7 +91,7 @@ func (srv *APIServer) setupRouter() chi.Router {
 	}))
 
 	r.Mount("/version", v1.VersionResource{Version: "version"}.Routes())
-	r.Mount("/api/v1/task", proxyv1.ProxyResource{ProxyManager: srv.proxyManager, AuthManager: srv.authManager}.Routes())
+	r.Mount("/api/v1/task", taskv1.TaskResource{TaskManager: srv.taskManager, AuthManager: srv.authManager}.Routes())
 
 	return r
 }

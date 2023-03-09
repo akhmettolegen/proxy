@@ -8,7 +8,7 @@ import (
 	"github.com/akhmettolegen/proxy/internal/database"
 	"github.com/akhmettolegen/proxy/internal/database/drivers"
 	"github.com/akhmettolegen/proxy/internal/managers/auth"
-	"github.com/akhmettolegen/proxy/internal/managers/proxy"
+	"github.com/akhmettolegen/proxy/internal/managers/task"
 	"github.com/akhmettolegen/proxy/internal/server/configs"
 	"github.com/akhmettolegen/proxy/internal/server/http"
 	"golang.org/x/sync/errgroup"
@@ -37,14 +37,14 @@ func Start() {
 	client := httpCli.NewClient(appCtx)
 
 	authManager := auth.NewAuthMan([]byte(opts.JWTKey))
-	proxyManager := proxy.NewManager(appCtx, client, ds.Task())
+	taskManager := task.NewManager(appCtx, client, ds.Task())
 
 	servers, serversCtx := errgroup.WithContext(appCtx)
 
 	httpSrv := http.NewAPIServer(
 		serversCtx,
 		opts,
-		http.WithProxyManager(proxyManager),
+		http.WithTaskManager(taskManager),
 		http.WithAuthManager(authManager),
 	)
 

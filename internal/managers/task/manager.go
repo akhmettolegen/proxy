@@ -1,4 +1,4 @@
-package proxy
+package task
 
 import (
 	"context"
@@ -25,7 +25,7 @@ type Manager struct {
 	taskRepo   drivers.TaskRepository
 }
 
-func NewManager(ctx context.Context, cli httpCli.HttpClient, taskRepo drivers.TaskRepository) managers.ProxyManager {
+func NewManager(ctx context.Context, cli httpCli.HttpClient, taskRepo drivers.TaskRepository) managers.TaskManager {
 	return &Manager{
 		ctx:        ctx,
 		httpClient: cli,
@@ -33,18 +33,18 @@ func NewManager(ctx context.Context, cli httpCli.HttpClient, taskRepo drivers.Ta
 	}
 }
 
-func (m *Manager) ProxyRequest(req *models.ProxyRequest) (*models.ProxyResponse, error) {
+func (m *Manager) TaskCreate(req *models.TaskRequest) (*models.TaskResponse, error) {
 
 	taskId := uuid.NewString()
 
-	go m.ProcessRequest(req, taskId)
+	go m.Create(req, taskId)
 
-	return &models.ProxyResponse{
+	return &models.TaskResponse{
 		Id: taskId,
 	}, nil
 }
 
-func (m *Manager) ProcessRequest(req *models.ProxyRequest, taskId string) {
+func (m *Manager) Create(req *models.TaskRequest, taskId string) {
 
 	task := &models.Task{
 		Id:     taskId,
@@ -58,16 +58,29 @@ func (m *Manager) ProcessRequest(req *models.ProxyRequest, taskId string) {
 		return
 	}
 
+	err = m.ProcessRequest(req, task)
+	if err != nil {
+		log.Println("[ERROR] Process request error:", err.Error())
+	}
+
+	err = m.taskRepo.Update(m.ctx, task)
+	if err != nil {
+		log.Println("[ERROR] Update task error:", err.Error())
+	}
+}
+
+func (m *Manager) ProcessRequest(req *models.TaskRequest, task *models.Task) error {
 	reqByte, err := json.Marshal(&req.Body)
 	if err != nil {
 		log.Println("[ERROR] Json marshal error:", err.Error())
-		return
+		return err
 	}
 
 	resp, err := m.httpClient.Request(req.Method, req.Url, req.Headers, reqByte)
 	if err != nil {
 		log.Println("[ERROR] Http client request error:", err.Error())
-		return
+		task.Status = models.TaskStatusError
+		return err
 	}
 
 	defer resp.Body.Close()
@@ -90,11 +103,7 @@ func (m *Manager) ProcessRequest(req *models.ProxyRequest, taskId string) {
 
 		task.Status = models.TaskStatusError
 	}
-
-	err = m.taskRepo.Update(m.ctx, task)
-	if err != nil {
-		log.Println("[ERROR] Update task error:", err.Error())
-	}
+	return nil
 }
 
 func (m *Manager) TaskById(id string) (*models.Task, error) {

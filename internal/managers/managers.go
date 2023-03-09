@@ -2,8 +2,9 @@ package managers
 
 import "github.com/akhmettolegen/proxy/internal/models"
 
-type ProxyManager interface {
-	ProxyRequest(req *models.ProxyRequest) (*models.ProxyResponse, error)
-	ProcessRequest(req *models.ProxyRequest, taskId string)
+type TaskManager interface {
+	TaskCreate(req *models.TaskRequest) (*models.TaskResponse, error)
+	Create(req *models.TaskRequest, taskId string)
+	ProcessRequest(req *models.TaskRequest, task *models.Task) error
 	TaskById(id string) (*models.Task, error)
 }

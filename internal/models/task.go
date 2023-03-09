@@ -18,3 +18,14 @@ type Task struct {
 	CreatedAt      time.Time           `bson:"createdAt" json:"createdAt,omitempty"`
 	UpdatedAt      time.Time           `bson:"updatedAt" json:"updatedAt,omitempty"`
 }
+
+type TaskRequest struct {
+	Method  string            `json:"method"`
+	Url     string            `json:"url"`
+	Headers map[string]string `json:"headers"`
+	Body    interface{}       `json:"body"`
+}
+
+type TaskResponse struct {
+	Id string `json:"id"`
+}
