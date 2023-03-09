@@ -1,0 +1,18 @@
+version: '3'
+services:
+  proxy:
+    container_name: proxy
+    build:
+      context: .
+    ports:
+      - "8080:8080"
+    environment:
+      - DATASTORE_URL=mongodb://mongodb-proxy-dev:27017
+      - LISTEN=:8080
+      - DEBUG=1
+      - TESTING=1
+  mongo:
+    container_name: mongodb-proxy-dev
+    image: mongo
+    ports:
+      - "27027:27017"
