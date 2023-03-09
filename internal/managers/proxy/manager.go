@@ -67,12 +67,6 @@ func (m *Manager) ProcessRequest(req *models.ProxyRequest, taskId string) {
 	resp, err := m.httpClient.Request(req.Method, req.Url, req.Headers, reqByte)
 	if err != nil {
 		log.Println("[ERROR] Http client request error:", err.Error())
-
-		task.Status = models.TaskStatusError
-		err = m.taskRepo.Update(m.ctx, task)
-		if err != nil {
-			log.Println("[ERROR] Update task error:", err.Error())
-		}
 		return
 	}
 

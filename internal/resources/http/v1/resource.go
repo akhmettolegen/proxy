@@ -3,6 +3,7 @@ package v1
 import (
 	"encoding/json"
 	"github.com/akhmettolegen/proxy/internal/managers"
+	"github.com/akhmettolegen/proxy/internal/managers/auth"
 	"github.com/akhmettolegen/proxy/internal/managers/proxy"
 	"github.com/akhmettolegen/proxy/internal/models"
 	"github.com/akhmettolegen/proxy/internal/models/httperrors"
@@ -13,10 +14,12 @@ import (
 
 type ProxyResource struct {
 	ProxyManager managers.ProxyManager
+	AuthManager  *auth.AuthManager
 }
 
 func (rs ProxyResource) Routes() chi.Router {
 	r := chi.NewRouter()
+	r.Use(auth.NewUserAccessCtx(rs.AuthManager.JWTKey()).ChiMiddleware)
 
 	r.Group(func(r chi.Router) {
 

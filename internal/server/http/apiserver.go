@@ -3,6 +3,7 @@ package http
 import (
 	"context"
 	"github.com/akhmettolegen/proxy/internal/managers"
+	"github.com/akhmettolegen/proxy/internal/managers/auth"
 	v1 "github.com/akhmettolegen/proxy/internal/resources/http"
 	proxyv1 "github.com/akhmettolegen/proxy/internal/resources/http/v1"
 	"github.com/akhmettolegen/proxy/internal/server/configs"
@@ -21,6 +22,7 @@ type APIServer struct {
 	masterCtx context.Context
 
 	proxyManager    managers.ProxyManager
+	authManager     *auth.AuthManager
 	idleConnsClosed chan struct{}
 	IsTesting       bool
 }
@@ -89,7 +91,7 @@ func (srv *APIServer) setupRouter() chi.Router {
 	}))
 
 	r.Mount("/version", v1.VersionResource{Version: "version"}.Routes())
-	r.Mount("/api/v1/task", proxyv1.ProxyResource{ProxyManager: srv.proxyManager}.Routes())
+	r.Mount("/api/v1/task", proxyv1.ProxyResource{ProxyManager: srv.proxyManager, AuthManager: srv.authManager}.Routes())
 
 	return r
 }

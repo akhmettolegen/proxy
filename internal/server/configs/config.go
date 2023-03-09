@@ -15,6 +15,8 @@ type Config struct {
 	DSDB   string `short:"d" long:"ds-db" env:"DATASTORE_DB" description:"DataStore database name (format: inventory)" required:"false" default:"proxy"`
 	DSURL  string `short:"u" long:"ds-url" env:"DATASTORE_URL" description:"DataStore URL (format: mongodb://localhost:27017)" required:"false" default:"mongodb://localhost:27017"`
 
+	JWTKey string `long:"jwt-key" env:"JWT_KEY" description:"JWT secret key" required:"false" default:"proxy-secret"`
+
 	InDebugMode bool `long:"in-debug-mode" env:"DEBUG" description:"debug mode"`
 	IsTesting   bool `long:"testing" env:"TESTING" description:"testing mode"`
 }

@@ -7,6 +7,7 @@ import (
 	httpCli "github.com/akhmettolegen/proxy/internal/clients/http"
 	"github.com/akhmettolegen/proxy/internal/database"
 	"github.com/akhmettolegen/proxy/internal/database/drivers"
+	"github.com/akhmettolegen/proxy/internal/managers/auth"
 	"github.com/akhmettolegen/proxy/internal/managers/proxy"
 	"github.com/akhmettolegen/proxy/internal/server/configs"
 	"github.com/akhmettolegen/proxy/internal/server/http"
@@ -35,6 +36,7 @@ func Start() {
 
 	client := httpCli.NewClient(appCtx)
 
+	authManager := auth.NewAuthMan([]byte(opts.JWTKey))
 	proxyManager := proxy.NewManager(appCtx, client, ds.Task())
 
 	servers, serversCtx := errgroup.WithContext(appCtx)
@@ -43,6 +45,7 @@ func Start() {
 		serversCtx,
 		opts,
 		http.WithProxyManager(proxyManager),
+		http.WithAuthManager(authManager),
 	)
 
 	servers.Go(func() error {
